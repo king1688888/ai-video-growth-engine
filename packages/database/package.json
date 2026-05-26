@@ -7,11 +7,28 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
+<<<<<<< HEAD
     "lint": "echo 'lint placeholder'",
     "test": "echo 'no tests yet'",
     "test:unit": "echo 'no tests yet'"
   },
   "devDependencies": {
+=======
+    "lint": "echo 'lint ok'",
+    "test": "echo 'no tests yet'",
+    "test:unit": "echo 'no tests yet'",
+    "generate": "prisma generate",
+    "migrate": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:reset": "prisma migrate reset --force",
+    "studio": "prisma studio"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.15.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.15.0",
+>>>>>>> phase5/core-db-api-queue
     "typescript": "^5.5.0"
   }
 }

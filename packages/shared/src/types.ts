@@ -1,5 +1,6 @@
 /**
- * Core shared types per D16 API contract.
+ * Core shared types per D16/D17/D21 API contract.
+ * These mirror Prisma enums for use in frontend and workers.
  */
 
 /** Unified API response wrapper */
@@ -20,6 +21,14 @@ export interface ApiMeta {
   request_id: string;
   timestamp: string;
   next_cursor?: string;
+  total?: number;
+}
+
+/** User roles */
+export enum UserRole {
+  USER = 'USER',
+  ADMIN = 'ADMIN',
+  SUPER_ADMIN = 'SUPER_ADMIN',
 }
 
 /** Task status enum per D17 */
@@ -64,6 +73,43 @@ export enum TaskStepStatus {
   WAITING_MANUAL_REVIEW = 'WAITING_MANUAL_REVIEW',
 }
 
+/** Asset status per D17 */
+export enum AssetStatus {
+  PENDING_UPLOAD = 'PENDING_UPLOAD',
+  UPLOADED = 'UPLOADED',
+  SCANNING = 'SCANNING',
+  AVAILABLE = 'AVAILABLE',
+  PROCESSING = 'PROCESSING',
+  DERIVED = 'DERIVED',
+  GENERATED = 'GENERATED',
+  QUARANTINED = 'QUARANTINED',
+  BLOCKED = 'BLOCKED',
+  PUBLISHED = 'PUBLISHED',
+  EXPORT_READY = 'EXPORT_READY',
+  EXPIRE_SCHEDULED = 'EXPIRE_SCHEDULED',
+  DELETING = 'DELETING',
+  DELETED = 'DELETED',
+  TOMBSTONED = 'TOMBSTONED',
+  FAILED = 'FAILED',
+}
+
+/** Asset type */
+export enum AssetType {
+  VIDEO_RAW = 'VIDEO_RAW',
+  VIDEO_PROXY = 'VIDEO_PROXY',
+  AUDIO = 'AUDIO',
+  FRAME = 'FRAME',
+  THUMBNAIL = 'THUMBNAIL',
+  TRANSCRIPT = 'TRANSCRIPT',
+  OCR_RESULT = 'OCR_RESULT',
+  EVIDENCE_PACK = 'EVIDENCE_PACK',
+  CONTENT_DNA_JSON = 'CONTENT_DNA_JSON',
+  CREATIVE_IR_JSON = 'CREATIVE_IR_JSON',
+  DELIVERABLE_PACK_JSON = 'DELIVERABLE_PACK_JSON',
+  REPORT_EXPORT = 'REPORT_EXPORT',
+  SYSTEM_INTERNAL = 'SYSTEM_INTERNAL',
+}
+
 /** Risk level per D21 */
 export enum RiskLevel {
   R0_PASS = 'R0_PASS',
@@ -72,4 +118,55 @@ export enum RiskLevel {
   R3_MANUAL_REVIEW = 'R3_MANUAL_REVIEW',
   R4_BLOCK = 'R4_BLOCK',
   R5_BLOCK_SANCTION = 'R5_BLOCK_SANCTION',
+}
+
+/** Review status */
+export enum ReviewStatus {
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  ESCALATED = 'ESCALATED',
+  CLOSED = 'CLOSED',
+}
+
+/** Credit transaction type per D19 */
+export enum CreditTransactionType {
+  GRANT = 'GRANT',
+  PURCHASE = 'PURCHASE',
+  HOLD = 'HOLD',
+  CAPTURE = 'CAPTURE',
+  REFUND = 'REFUND',
+  COMPENSATE = 'COMPENSATE',
+  EXPIRE = 'EXPIRE',
+  ADMIN_ADJUST = 'ADMIN_ADJUST',
+}
+
+/** Export status */
+export enum ExportStatus {
+  PENDING = 'PENDING',
+  GENERATING = 'GENERATING',
+  READY = 'READY',
+  DOWNLOADED = 'DOWNLOADED',
+  EXPIRED = 'EXPIRED',
+  FAILED = 'FAILED',
+}
+
+/** Prompt run status */
+export enum PromptRunStatus {
+  PENDING = 'PENDING',
+  RUNNING = 'RUNNING',
+  SUCCEEDED = 'SUCCEEDED',
+  FAILED = 'FAILED',
+  TIMEOUT = 'TIMEOUT',
+}
+
+/** Model call status */
+export enum ModelCallStatus {
+  PENDING = 'PENDING',
+  CALLING = 'CALLING',
+  SUCCEEDED = 'SUCCEEDED',
+  FAILED = 'FAILED',
+  TIMEOUT = 'TIMEOUT',
+  RATE_LIMITED = 'RATE_LIMITED',
 }

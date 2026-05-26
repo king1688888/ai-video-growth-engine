@@ -1,0 +1,657 @@
+// =============================================================
+// AI Video Growth Engine - MVP1 Database Schema
+// Authority: D16 (DB/API Contract), D17 (Task State Machine)
+// =============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================
+// ENUMS (per D16/D17/D21)
+// =============================================================
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum VideoAnalysisTaskStatus {
+  DRAFT
+  CREATED
+  AWAITING_UPLOAD
+  UPLOADED
+  CONSENT_CONFIRMED
+  PRECHECK_BLOCKED
+  QUOTED
+  CREDIT_HELD
+  QUEUED
+  RUNNING
+  WAITING_RETRY
+  DEGRADED_RUNNING
+  WAITING_MANUAL_REVIEW
+  BLOCKED_RISK
+  PARTIAL_SUCCEEDED
+  SUCCEEDED
+  FAILED
+  CANCELED
+  REFUND_PENDING
+  REFUNDED
+  EXPIRED
+  DELETED
+}
+
+enum TaskStepStatus {
+  PENDING
+  SKIPPED
+  QUEUED
+  RUNNING
+  HEARTBEAT_LOST
+  SUCCEEDED
+  DEGRADED
+  FAILED_RETRYABLE
+  FAILED_FINAL
+  BLOCKED
+  CANCELED
+  WAITING_MANUAL_REVIEW
+}
+
+enum TaskStepName {
+  CONSENT_CHECK
+  CREDIT_HOLD
+  UPLOAD_VALIDATE
+  NORMALIZE_VIDEO
+  EXTRACT_AUDIO
+  RUN_ASR
+  EXTRACT_FRAMES
+  RUN_OCR
+  DETECT_SHOTS
+  BUILD_EVIDENCE_PACK
+  VIDEO_UNDERSTANDING
+  CONTENT_DNA
+  REPORT_GENERATION
+  CREATIVE_IR
+  DELIVERABLES
+  QUALITY_CHECK
+  SIMILARITY_CHECK
+  COMPLIANCE_CHECK
+  RISK_DECISION
+  SETTLEMENT
+  EXPORT_REPORT
+  PUBLISH_RESULT
+}
+
+enum AssetStatus {
+  PENDING_UPLOAD
+  UPLOADED
+  SCANNING
+  AVAILABLE
+  PROCESSING
+  DERIVED
+  GENERATED
+  QUARANTINED
+  BLOCKED
+  PUBLISHED
+  EXPORT_READY
+  EXPIRE_SCHEDULED
+  DELETING
+  DELETED
+  TOMBSTONED
+  FAILED
+}
+
+enum AssetType {
+  VIDEO_RAW
+  VIDEO_PROXY
+  AUDIO
+  FRAME
+  THUMBNAIL
+  TRANSCRIPT
+  OCR_RESULT
+  EVIDENCE_PACK
+  CONTENT_DNA_JSON
+  CREATIVE_IR_JSON
+  DELIVERABLE_PACK_JSON
+  REPORT_EXPORT
+  SYSTEM_INTERNAL
+}
+
+enum RiskLevel {
+  R0_PASS
+  R1_WARN
+  R2_AUTO_REWRITE
+  R3_MANUAL_REVIEW
+  R4_BLOCK
+  R5_BLOCK_SANCTION
+}
+
+enum ReviewStatus {
+  PENDING
+  IN_PROGRESS
+  APPROVED
+  REJECTED
+  ESCALATED
+  CLOSED
+}
+
+enum CreditTransactionType {
+  GRANT
+  PURCHASE
+  HOLD
+  CAPTURE
+  REFUND
+  COMPENSATE
+  EXPIRE
+  ADMIN_ADJUST
+}
+
+enum ExportStatus {
+  PENDING
+  GENERATING
+  READY
+  DOWNLOADED
+  EXPIRED
+  FAILED
+}
+
+enum PromptRunStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  TIMEOUT
+}
+
+enum ModelCallStatus {
+  PENDING
+  CALLING
+  SUCCEEDED
+  FAILED
+  TIMEOUT
+  RATE_LIMITED
+}
+
+// =============================================================
+// TABLES
+// =============================================================
+
+// --- Account & Organization ---
+
+model User {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email          String   @unique
+  passwordHash   String   @map("password_hash")
+  displayName    String?  @map("display_name")
+  role           UserRole @default(USER)
+  isActive       Boolean  @default(true) @map("is_active")
+  emailVerified  Boolean  @default(false) @map("email_verified")
+  lastLoginAt    DateTime? @map("last_login_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  orgMembers     OrganizationMember[]
+  consents       UserConsent[]
+  creditAccount  CreditAccount?
+  auditLogs      AuditLog[]
+
+  @@map("users")
+}
+
+model Organization {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  isPersonal  Boolean  @default(true) @map("is_personal")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  members         OrganizationMember[]
+  creatorProfiles CreatorProfile[]
+  tasks           VideoAnalysisTask[]
+  assets          Asset[]
+
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId     String   @map("org_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  role      String   @default("owner")
+  joinedAt  DateTime @default(now()) @map("joined_at")
+
+  org  Organization @relation(fields: [orgId], references: [id])
+  user User         @relation(fields: [userId], references: [id])
+
+  @@unique([orgId, userId])
+  @@map("organization_members")
+}
+
+// --- Creator Profile ---
+
+model CreatorProfile {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId           String   @map("org_id") @db.Uuid
+  industry        String?
+  platform        String?
+  persona         String?
+  targetAudience  String?  @map("target_audience")
+  productInfo     String?  @map("product_info")
+  contentGoal     String?  @map("content_goal")
+  prohibitedContent String? @map("prohibited_content")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  org Organization @relation(fields: [orgId], references: [id])
+
+  @@map("creator_profiles")
+}
+
+// --- Consent ---
+
+model UserConsent {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  consentType   String   @map("consent_type")
+  version       String
+  accepted      Boolean
+  ipAddress     String?  @map("ip_address")
+  userAgent     String?  @map("user_agent")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("user_consents")
+}
+
+// --- Asset ---
+
+model Asset {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId         String      @map("org_id") @db.Uuid
+  userId        String      @map("user_id") @db.Uuid
+  type          AssetType
+  status        AssetStatus @default(PENDING_UPLOAD)
+  fileName      String?     @map("file_name")
+  mimeType      String?     @map("mime_type")
+  sizeBytes     BigInt?     @map("size_bytes")
+  storageKey    String?     @map("storage_key")
+  storageBucket String?     @map("storage_bucket")
+  durationMs    Int?        @map("duration_ms")
+  metadata      Json?
+  parentAssetId String?     @map("parent_asset_id") @db.Uuid
+  taskId        String?     @map("task_id") @db.Uuid
+  expireAt      DateTime?   @map("expire_at")
+  isMock        Boolean     @default(false) @map("is_mock")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  deletedAt     DateTime?   @map("deleted_at")
+
+  org Organization @relation(fields: [orgId], references: [id])
+
+  @@index([orgId, status])
+  @@index([taskId])
+  @@map("assets")
+}
+
+// --- Task ---
+
+model VideoAnalysisTask {
+  id               String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId            String                   @map("org_id") @db.Uuid
+  userId           String                   @map("user_id") @db.Uuid
+  profileId        String?                  @map("profile_id") @db.Uuid
+  sourceAssetId    String?                  @map("source_asset_id") @db.Uuid
+  status           VideoAnalysisTaskStatus  @default(CREATED)
+  progress         Int                      @default(0)
+  totalSteps       Int                      @default(0) @map("total_steps")
+  completedSteps   Int                      @default(0) @map("completed_steps")
+  estimatedCredits Int?                     @map("estimated_credits")
+  actualCredits    Int?                     @map("actual_credits")
+  riskLevel        RiskLevel?               @map("risk_level")
+  errorCode        String?                  @map("error_code")
+  errorMessage     String?                  @map("error_message")
+  idempotencyKey   String?                  @unique @map("idempotency_key")
+  isMock           Boolean                  @default(false) @map("is_mock")
+  traceId          String?                  @map("trace_id")
+  startedAt        DateTime?                @map("started_at")
+  completedAt      DateTime?                @map("completed_at")
+  createdAt        DateTime                 @default(now()) @map("created_at")
+  updatedAt        DateTime                 @updatedAt @map("updated_at")
+  deletedAt        DateTime?                @map("deleted_at")
+
+  org        Organization   @relation(fields: [orgId], references: [id])
+  stepLogs   TaskStepLog[]
+  events     TaskEvent[]
+
+  @@index([orgId, status])
+  @@index([userId])
+  @@map("video_analysis_tasks")
+}
+
+model TaskStepLog {
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId      String         @map("task_id") @db.Uuid
+  stepName    TaskStepName   @map("step_name")
+  status      TaskStepStatus @default(PENDING)
+  attempt     Int            @default(1)
+  queueName   String?        @map("queue_name")
+  jobId       String?        @map("job_id")
+  inputRef    String?        @map("input_ref")
+  outputRef   String?        @map("output_ref")
+  errorCode   String?        @map("error_code")
+  errorMsg    String?        @map("error_msg")
+  durationMs  Int?           @map("duration_ms")
+  startedAt   DateTime?      @map("started_at")
+  completedAt DateTime?      @map("completed_at")
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  task VideoAnalysisTask @relation(fields: [taskId], references: [id])
+
+  @@index([taskId, stepName])
+  @@map("task_step_logs")
+}
+
+model TaskEvent {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId    String   @map("task_id") @db.Uuid
+  eventType String   @map("event_type")
+  payload   Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  task VideoAnalysisTask @relation(fields: [taskId], references: [id])
+
+  @@index([taskId])
+  @@map("task_events")
+}
+
+// --- Video Processing ---
+
+model VideoProcessingResult {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId        String   @map("task_id") @db.Uuid
+  stepName      String   @map("step_name")
+  resultType    String   @map("result_type")
+  storageRef    String?  @map("storage_ref")
+  data          Json?
+  confidence    Float?
+  schemaVersion String   @default("1.0") @map("schema_version")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([taskId])
+  @@map("video_processing_results")
+}
+
+// --- AI Assets ---
+
+model ContentDna {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId        String   @map("task_id") @db.Uuid
+  data          Json
+  schemaVersion String   @default("1.0") @map("schema_version")
+  isMock        Boolean  @default(false) @map("is_mock")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([taskId])
+  @@map("content_dnas")
+}
+
+model CreativeIr {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId        String   @map("task_id") @db.Uuid
+  data          Json
+  schemaVersion String   @default("1.0") @map("schema_version")
+  isMock        Boolean  @default(false) @map("is_mock")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([taskId])
+  @@map("creative_irs")
+}
+
+model DeliverablePack {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId        String   @map("task_id") @db.Uuid
+  scripts       Json?
+  titles        Json?
+  coverSuggestions Json? @map("cover_suggestions")
+  videoPrompts  Json?    @map("video_prompts")
+  schemaVersion String   @default("1.0") @map("schema_version")
+  riskLevel     RiskLevel? @map("risk_level")
+  aigcLabeled   Boolean  @default(true) @map("aigc_labeled")
+  isMock        Boolean  @default(false) @map("is_mock")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([taskId])
+  @@map("deliverable_packs")
+}
+
+// --- Prompt & Model ---
+
+model PromptTemplate {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique
+  description String?
+  category    String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  versions PromptVersion[]
+
+  @@map("prompt_templates")
+}
+
+model PromptVersion {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  templateId   String   @map("template_id") @db.Uuid
+  version      Int
+  promptText   String   @map("prompt_text")
+  variables    Json?
+  outputSchema Json?    @map("output_schema")
+  status       String   @default("draft")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  template PromptTemplate @relation(fields: [templateId], references: [id])
+
+  @@unique([templateId, version])
+  @@map("prompt_versions")
+}
+
+model PromptRun {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId        String?         @map("task_id") @db.Uuid
+  templateName  String          @map("template_name")
+  versionId     String?         @map("version_id") @db.Uuid
+  input         Json?
+  output        Json?
+  status        PromptRunStatus @default(PENDING)
+  durationMs    Int?            @map("duration_ms")
+  isMock        Boolean         @default(false) @map("is_mock")
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  @@index([taskId])
+  @@map("prompt_runs")
+}
+
+model ModelCallLog {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId        String?         @map("task_id") @db.Uuid
+  promptRunId   String?         @map("prompt_run_id") @db.Uuid
+  provider      String
+  model         String
+  inputTokens   Int?            @map("input_tokens")
+  outputTokens  Int?            @map("output_tokens")
+  totalTokens   Int?            @map("total_tokens")
+  costMicroUsd  Int?            @map("cost_micro_usd")
+  latencyMs     Int?            @map("latency_ms")
+  status        ModelCallStatus @default(PENDING)
+  errorCode     String?         @map("error_code")
+  isMock        Boolean         @default(false) @map("is_mock")
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  @@index([taskId])
+  @@map("model_call_logs")
+}
+
+// --- Risk & Quality ---
+
+model RiskCheckReport {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId      String    @map("task_id") @db.Uuid
+  checkType   String    @map("check_type")
+  riskLevel   RiskLevel @map("risk_level")
+  score       Float?
+  details     Json?
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([taskId])
+  @@map("risk_check_reports")
+}
+
+model QualityCheckReport {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId      String   @map("task_id") @db.Uuid
+  overallScore Float?  @map("overall_score")
+  dimensions  Json?
+  passed      Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([taskId])
+  @@map("quality_check_reports")
+}
+
+// --- Billing ---
+
+model CreditAccount {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String   @unique @map("user_id") @db.Uuid
+  balance      Int      @default(0)
+  frozen       Int      @default(0)
+  totalEarned  Int      @default(0) @map("total_earned")
+  totalSpent   Int      @default(0) @map("total_spent")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user         User     @relation(fields: [userId], references: [id])
+  transactions CreditTransaction[]
+
+  @@map("credit_accounts")
+}
+
+model CreditTransaction {
+  id             String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountId      String                @map("account_id") @db.Uuid
+  type           CreditTransactionType
+  amount         Int
+  balanceBefore  Int                   @map("balance_before")
+  balanceAfter   Int                   @map("balance_after")
+  taskId         String?               @map("task_id") @db.Uuid
+  description    String?
+  idempotencyKey String?               @unique @map("idempotency_key")
+  createdAt      DateTime              @default(now()) @map("created_at")
+
+  account CreditAccount @relation(fields: [accountId], references: [id])
+
+  @@index([accountId])
+  @@index([taskId])
+  @@map("credit_transactions")
+}
+
+model CostLedgerEntry {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId        String   @map("task_id") @db.Uuid
+  stepName      String?  @map("step_name")
+  modelCallId   String?  @map("model_call_id") @db.Uuid
+  costMicroUsd  Int      @map("cost_micro_usd")
+  provider      String?
+  model         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([taskId])
+  @@map("cost_ledger_entries")
+}
+
+// --- Export ---
+
+model ExportJob {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId         String       @map("task_id") @db.Uuid
+  userId         String       @map("user_id") @db.Uuid
+  format         String       @default("markdown")
+  status         ExportStatus @default(PENDING)
+  storageKey     String?      @map("storage_key")
+  idempotencyKey String?      @unique @map("idempotency_key")
+  aigcLabeled    Boolean      @default(true) @map("aigc_labeled")
+  errorMessage   String?      @map("error_message")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  completedAt    DateTime?    @map("completed_at")
+
+  @@index([taskId])
+  @@index([userId])
+  @@map("export_jobs")
+}
+
+// --- Manual Review & Support ---
+
+model ManualReviewTicket {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId      String       @map("task_id") @db.Uuid
+  reason      String
+  status      ReviewStatus @default(PENDING)
+  assignedTo  String?      @map("assigned_to") @db.Uuid
+  decision    String?
+  notes       String?
+  resolvedAt  DateTime?    @map("resolved_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@map("manual_review_tickets")
+}
+
+model SupportTicket {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  taskId      String?  @map("task_id") @db.Uuid
+  type        String
+  subject     String
+  description String?
+  status      String   @default("open")
+  priority    String   @default("normal")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("support_tickets")
+}
+
+// --- Audit ---
+
+model AuditLog {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String?  @map("user_id") @db.Uuid
+  action         String
+  resource       String
+  resourceId     String?  @map("resource_id")
+  details        Json?
+  ipAddress      String?  @map("ip_address")
+  userAgent      String?  @map("user_agent")
+  requestId      String?  @map("request_id")
+  traceId        String?  @map("trace_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([resource, resourceId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
