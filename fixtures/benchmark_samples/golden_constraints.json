@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "description": "Golden constraints for AI output validation (D12)",
+  "constraints": {
+    "content_dna": {
+      "must_have_fields": ["hook", "structure", "emotion_curve", "replicable_elements", "non_replicable_elements", "viral_factors"],
+      "hook_types_allowed": ["question", "conflict", "number", "story", "visual_shock", "pain_point", "promise"],
+      "structure_patterns_allowed": ["problem_solution", "progressive", "contrast", "story_arc", "list", "tutorial", "before_after"],
+      "replicable_min_count": 2,
+      "non_replicable_min_count": 1
+    },
+    "creative_ir": {
+      "must_have_fields": ["creative_goal", "hook_strategy", "story_arc", "originality_constraints", "industry_adaptation"],
+      "originality_level_default": "high",
+      "max_structural_similarity": 0.7,
+      "max_textual_similarity": 0.3
+    },
+    "deliverables": {
+      "scripts_count": 5,
+      "titles_count": 10,
+      "cover_suggestions_count": 3,
+      "video_prompts_count": 3,
+      "title_max_length": 30,
+      "script_must_have": ["title", "hook", "body", "cta"]
+    },
+    "risk": {
+      "prohibited_patterns": ["模仿", "复制", "克隆", "搬运", "仿脸", "仿声", "同款", "一模一样", "照搬", "抄袭"],
+      "similarity_block_threshold": 0.7,
+      "must_have_aigc_label": true,
+      "blocked_cannot_export": true
+    }
+  }
+}
