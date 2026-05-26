@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  docs-check:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify required documents exist
+        run: |
+          echo "=== Checking product documents ==="
+          required_docs="D00 D01 D02 D03 D04 D05 D06 D07 D08 D09 D10 D11 D12 D13 D14 D15 D16 D17 D18 D20 D22 D23"
+          missing=0
+          for doc in $required_docs; do
+            if [ ! -f "docs/product/${doc}.md" ]; then
+              echo "MISSING: docs/product/${doc}.md"
+              missing=$((missing + 1))
+            else
+              echo "OK: docs/product/${doc}.md"
+            fi
+          done
+
+          if [ ! -f "docs/product/D19_商业化系统_套餐积分_订单与成本结算文档.md" ]; then
+            echo "MISSING: D19"
+            missing=$((missing + 1))
+          else
+            echo "OK: D19"
+          fi
+
+          if [ ! -f "docs/product/D21_合规_授权_AIGC标识与内容审核文档.md" ]; then
+            echo "MISSING: D21"
+            missing=$((missing + 1))
+          else
+            echo "OK: D21"
+          fi
+
+          if [ ! -f "docs/product/D24_最终验收_交接与后续迭代文档.md" ]; then
+            echo "MISSING: D24"
+            missing=$((missing + 1))
+          else
+            echo "OK: D24"
+          fi
+
+          if [ $missing -gt 0 ]; then
+            echo "::error::${missing} required documents are missing!"
+            exit 1
+          fi
+
+          echo "=== All required documents present ==="
+
+      - name: Check for secrets in files
+        run: |
+          echo "=== Scanning for potential secrets ==="
+          if grep -rn "sk-[a-zA-Z0-9]\{20,\}" --include="*.py" --include="*.js" --include="*.ts" --include="*.yml" --include="*.yaml" --include="*.json" --include="*.env" . 2>/dev/null; then
+            echo "::error::Potential API key found in source files!"
+            exit 1
+          fi
+
+          if grep -rn "AKIA[0-9A-Z]\{16\}" --include="*.py" --include="*.js" --include="*.ts" --include="*.yml" --include="*.yaml" --include="*.json" --include="*.env" . 2>/dev/null; then
+            echo "::error::Potential AWS key found in source files!"
+            exit 1
+          fi
+
+          echo "No obvious secrets detected"
+
+      - name: Verify directory structure
+        run: |
+          echo "=== Checking directory structure ==="
+          dirs="docs/product docs/source docs/setup"
+          for dir in $dirs; do
+            if [ ! -d "$dir" ]; then
+              echo "MISSING directory: $dir"
+              exit 1
+            else
+              echo "OK: $dir"
+            fi
+          done
+          echo "=== Directory structure valid ==="
+
+  markdown-lint:
+    name: Markdown Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install markdownlint-cli
+        run: npm install -g markdownlint-cli
+
+      - name: Lint markdown files
+        run: |
+          markdownlint '**/*.md' \
+            --disable MD013 MD033 MD041 MD024 MD036 MD040 MD029 MD032 MD031 MD034 MD012 \
+            || echo "::warning::Markdown lint found issues (non-blocking)"
+        continue-on-error: true
