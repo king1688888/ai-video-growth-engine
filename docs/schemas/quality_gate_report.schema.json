@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "quality_gate_report",
+  "title": "QualityGateReport",
+  "description": "测试、风控、商业化、合规、发布门禁结果（来源：D20/D23）",
+  "type": "object",
+  "required": ["task_id", "gates"],
+  "properties": {
+    "task_id": { "type": "string" },
+    "evaluated_at": { "type": "string", "format": "date-time" },
+    "overall_result": { "type": "string", "enum": ["pass", "conditional_pass", "fail"] },
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["gate_id", "gate_name", "result"],
+        "properties": {
+          "gate_id": { "type": "string", "description": "门禁编号，如 G1-G9" },
+          "gate_name": { "type": "string" },
+          "result": { "type": "string", "enum": ["pass", "fail", "not_applicable", "deferred"] },
+          "evidence": { "type": "string", "description": "通过/失败证据" },
+          "blocking": { "type": "boolean", "description": "是否阻塞上线" }
+        }
+      }
+    },
+    "test_summary": {
+      "type": "object",
+      "properties": {
+        "unit_tests_passed": { "type": "integer" },
+        "unit_tests_total": { "type": "integer" },
+        "integration_tests_passed": { "type": "integer" },
+        "integration_tests_total": { "type": "integer" },
+        "e2e_tests_passed": { "type": "integer" },
+        "e2e_tests_total": { "type": "integer" },
+        "coverage_percent": { "type": "number" }
+      }
+    },
+    "blocking_issues": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "recommendations": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agent_task_spec",
+  "title": "AgentTaskSpec",
+  "description": "AIcoding Agent 标准任务输入结构（来源：D23 §5.2）",
+  "type": "object",
+  "required": ["task_id", "task_type", "module", "objective", "input_docs", "scope", "out_of_scope", "acceptance_criteria"],
+  "properties": {
+    "task_id": { "type": "string", "description": "唯一任务标识" },
+    "task_type": {
+      "type": "string",
+      "enum": ["DOC_TASK", "CONTRACT_TASK", "FEATURE_TASK", "AI_TASK", "QUEUE_TASK", "BILLING_TASK", "COMPLIANCE_TASK", "BUGFIX_TASK", "REFACTOR_TASK", "HOTFIX_TASK", "RELEASE_TASK", "HANDOFF_TASK"]
+    },
+    "module": { "type": "string", "description": "关联模块编号，如 M04" },
+    "objective": { "type": "string", "description": "任务目标" },
+    "input_docs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "必读文档列表"
+    },
+    "scope": { "type": "string", "description": "实现范围" },
+    "out_of_scope": { "type": "string", "description": "明确不做" },
+    "acceptance_criteria": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "验收标准列表"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "前置依赖（模块或 PR）"
+    },
+    "priority": { "type": "string", "enum": ["P0", "P1", "P2"] },
+    "assigned_agent": { "type": "string", "description": "分配的 Agent 类型" },
+    "branch_name": { "type": "string", "description": "Git 分支名" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "created_by": { "type": "string" }
+  }
+}
