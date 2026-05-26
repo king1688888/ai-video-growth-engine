@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contract_change_request",
+  "title": "ContractChangeRequest",
+  "description": "契约变更申请结构（来源：D23 §5.5）",
+  "type": "object",
+  "required": ["ccr_id", "requested_by", "change_type", "reason", "impact_scope", "migration_plan", "rollback_plan", "test_plan", "docs_to_update"],
+  "properties": {
+    "ccr_id": { "type": "string", "description": "变更申请唯一标识" },
+    "requested_by": { "type": "string", "description": "申请 Agent 或人员" },
+    "requested_at": { "type": "string", "format": "date-time" },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "pending_review", "approved", "rejected", "implemented"],
+      "description": "审批状态"
+    },
+    "change_type": {
+      "type": "string",
+      "enum": ["database_schema", "api_contract", "task_state", "prompt_schema", "model_routing", "billing_rule", "risk_level", "permission_role", "page_viewmodel", "test_gate"],
+      "description": "变更类型"
+    },
+    "reason": { "type": "string", "description": "变更原因" },
+    "current_state": { "type": "string", "description": "当前状态描述" },
+    "proposed_change": { "type": "string", "description": "拟变更内容" },
+    "impact_scope": {
+      "type": "object",
+      "properties": {
+        "affected_modules": { "type": "array", "items": { "type": "string" } },
+        "affected_docs": { "type": "array", "items": { "type": "string" } },
+        "affected_apis": { "type": "array", "items": { "type": "string" } },
+        "affected_tables": { "type": "array", "items": { "type": "string" } },
+        "backward_compatible": { "type": "boolean" }
+      },
+      "required": ["affected_modules", "backward_compatible"]
+    },
+    "migration_plan": { "type": "string", "description": "迁移方案" },
+    "rollback_plan": { "type": "string", "description": "回滚方案" },
+    "test_plan": { "type": "string", "description": "测试计划" },
+    "docs_to_update": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "需要回写的文档"
+    },
+    "approved_by": { "type": "string" },
+    "approved_at": { "type": "string", "format": "date-time" },
+    "implementation_pr": { "type": "string", "format": "uri" }
+  }
+}

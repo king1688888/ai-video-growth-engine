@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agent_run_log",
+  "title": "AgentRunLog",
+  "description": "Agent 每次执行日志结构（来源：D23 §5.2）",
+  "type": "object",
+  "required": ["run_id", "task_id", "agent", "started_at", "status", "docs_read", "files_changed"],
+  "properties": {
+    "run_id": { "type": "string", "description": "执行唯一标识" },
+    "task_id": { "type": "string", "description": "关联任务 ID" },
+    "agent": { "type": "string", "description": "执行 Agent 名称" },
+    "started_at": { "type": "string", "format": "date-time" },
+    "completed_at": { "type": "string", "format": "date-time" },
+    "status": { "type": "string", "enum": ["in_progress", "completed", "failed", "blocked"] },
+    "docs_read": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "已读取的文档编号"
+    },
+    "files_changed": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "action": { "type": "string", "enum": ["created", "modified", "deleted"] }
+        },
+        "required": ["path", "action"]
+      }
+    },
+    "tests_run": { "type": "string", "description": "测试命令" },
+    "tests_result": { "type": "string", "description": "测试结果摘要" },
+    "pr_url": { "type": "string", "format": "uri" },
+    "risks": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "unfinished_items": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "rollback_plan": { "type": "string" },
+    "doc_writeback_needed": { "type": "boolean" },
+    "next_steps": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

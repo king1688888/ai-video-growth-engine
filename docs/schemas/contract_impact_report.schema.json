@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contract_impact_report",
+  "title": "ContractImpactReport",
+  "description": "数据/API/Prompt/队列/页面/计费/合规影响报告（来源：D23 §5.2）",
+  "type": "object",
+  "required": ["task_id", "database_impact", "api_impact", "queue_impact", "prompt_impact", "billing_impact", "compliance_impact"],
+  "properties": {
+    "task_id": { "type": "string" },
+    "database_impact": {
+      "type": "object",
+      "properties": {
+        "has_changes": { "type": "boolean" },
+        "tables_added": { "type": "array", "items": { "type": "string" } },
+        "tables_modified": { "type": "array", "items": { "type": "string" } },
+        "migration_file": { "type": "string" },
+        "backward_compatible": { "type": "boolean" }
+      },
+      "required": ["has_changes"]
+    },
+    "api_impact": {
+      "type": "object",
+      "properties": {
+        "has_changes": { "type": "boolean" },
+        "endpoints_added": { "type": "array", "items": { "type": "string" } },
+        "endpoints_modified": { "type": "array", "items": { "type": "string" } },
+        "breaking_changes": { "type": "boolean" }
+      },
+      "required": ["has_changes"]
+    },
+    "queue_impact": {
+      "type": "object",
+      "properties": {
+        "has_changes": { "type": "boolean" },
+        "queues_added": { "type": "array", "items": { "type": "string" } },
+        "states_modified": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["has_changes"]
+    },
+    "prompt_impact": {
+      "type": "object",
+      "properties": {
+        "has_changes": { "type": "boolean" },
+        "prompts_added": { "type": "array", "items": { "type": "string" } },
+        "prompts_modified": { "type": "array", "items": { "type": "string" } },
+        "model_changes": { "type": "boolean" },
+        "cost_impact": { "type": "string" }
+      },
+      "required": ["has_changes"]
+    },
+    "billing_impact": {
+      "type": "object",
+      "properties": {
+        "has_changes": { "type": "boolean" },
+        "credit_flow_affected": { "type": "boolean" },
+        "pricing_affected": { "type": "boolean" },
+        "description": { "type": "string" }
+      },
+      "required": ["has_changes"]
+    },
+    "compliance_impact": {
+      "type": "object",
+      "properties": {
+        "has_changes": { "type": "boolean" },
+        "authorization_affected": { "type": "boolean" },
+        "aigc_label_affected": { "type": "boolean" },
+        "risk_level_affected": { "type": "boolean" },
+        "description": { "type": "string" }
+      },
+      "required": ["has_changes"]
+    },
+    "page_impact": {
+      "type": "object",
+      "properties": {
+        "has_changes": { "type": "boolean" },
+        "pages_affected": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

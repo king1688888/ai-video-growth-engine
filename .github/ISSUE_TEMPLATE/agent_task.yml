@@ -1,0 +1,125 @@
+name: Agent Task
+description: AIcoding Agent 任务卡（标准化任务输入）
+title: "[TASK] "
+labels: ["agent-task"]
+body:
+  - type: dropdown
+    id: task_type
+    attributes:
+      label: 任务类型
+      options:
+        - DOC_TASK（文档生成/更新）
+        - CONTRACT_TASK（契约变更）
+        - FEATURE_TASK（功能开发）
+        - AI_TASK（Prompt/模型/Schema）
+        - QUEUE_TASK（异步任务/Worker）
+        - BILLING_TASK（积分/订单/成本）
+        - COMPLIANCE_TASK（合规/授权/审核）
+        - BUGFIX_TASK（缺陷修复）
+        - REFACTOR_TASK（重构）
+        - HOTFIX_TASK（紧急修复）
+        - RELEASE_TASK（发布/部署）
+        - HANDOFF_TASK（模块交接）
+    validations:
+      required: true
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: 关联模块
+      options:
+        - M00 基础工程框架
+        - M01 用户认证与权限
+        - M02 用户画像与行业配置
+        - M03 合规授权与意图预检
+        - M04 视频上传与资产管理
+        - M05 积分套餐与计费
+        - M06 异步任务编排
+        - M07 视频处理管线
+        - M08 多模态理解与 Content DNA
+        - M09 Creative IR 与原创化输出
+        - M10 Prompt 模型调用与成本日志
+        - M11 质检评分与合规风控
+        - M12 报告导出与历史反馈
+        - M13 运营后台与人工复核
+        - M14 监控审计与 DevOps
+        - 跨模块
+    validations:
+      required: true
+
+  - type: textarea
+    id: objective
+    attributes:
+      label: 任务目标
+      description: 清晰描述本次任务要完成什么
+      placeholder: "实现视频上传 API，支持 MP4/MOV 格式，≤200MB，≤3min"
+    validations:
+      required: true
+
+  - type: textarea
+    id: input_docs
+    attributes:
+      label: 必读文档
+      description: 执行本任务前必须阅读的文档编号
+      placeholder: "D00, D05(M04), D08, D16, D17, D21"
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: 实现范围
+      description: 本次任务的具体实现范围
+    validations:
+      required: true
+
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: 明确不做
+      description: 本次任务明确不做的事项
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: 验收标准
+      description: 如何判断本任务已完成
+      placeholder: |
+        1. 视频上传 API 返回 asset_id
+        2. 非法格式返回 400
+        3. 超大文件返回 413
+        4. 测试覆盖率 > 80%
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: 前置依赖
+      description: 本任务依赖哪些已完成的模块或 PR
+      placeholder: "依赖 M00 基础框架、M01 用户认证"
+
+  - type: textarea
+    id: contract_impact
+    attributes:
+      label: 契约影响预估
+      description: 预估对数据库/API/队列/Prompt/计费/合规的影响
+      placeholder: |
+        - 新增表：UploadedAsset
+        - 新增 API：POST /api/v1/assets/upload
+        - 队列：无
+        - 计费：无
+        - 合规：需要授权确认前置
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 优先级
+      options:
+        - P0（阻塞上线）
+        - P1（影响体验）
+        - P2（后续优化）
+    validations:
+      required: true
