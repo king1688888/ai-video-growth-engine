@@ -1,0 +1,17 @@
+{
+  "name": "@app/ai-core",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "echo 'lint placeholder'",
+    "test": "echo 'no tests yet'",
+    "test:unit": "echo 'no tests yet'"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}
