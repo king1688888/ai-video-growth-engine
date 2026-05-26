@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "content_dna",
+  "title": "ContentDNA",
+  "description": "Content DNA - 视频爆款结构化资产 (D07)",
+  "type": "object",
+  "required": ["hook", "structure", "emotion_curve", "replicable_elements", "non_replicable_elements", "viral_factors"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "hook": {
+      "type": "object",
+      "required": ["type", "duration_ms", "technique"],
+      "properties": {
+        "type": { "type": "string", "enum": ["question", "conflict", "number", "story", "visual_shock", "pain_point", "promise"] },
+        "duration_ms": { "type": "integer", "minimum": 500, "maximum": 5000 },
+        "technique": { "type": "string" },
+        "effectiveness_score": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "structure": {
+      "type": "object",
+      "required": ["pattern", "segments"],
+      "properties": {
+        "pattern": { "type": "string", "enum": ["problem_solution", "progressive", "contrast", "story_arc", "list", "tutorial", "before_after"] },
+        "segments": { "type": "array", "items": { "type": "object" } }
+      }
+    },
+    "emotion_curve": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "timestamp_ms": { "type": "integer" },
+          "emotion": { "type": "string" },
+          "intensity": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "replicable_elements": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "可学习的结构元素"
+    },
+    "non_replicable_elements": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "不可复制的个人表达"
+    },
+    "viral_factors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "factor": { "type": "string" },
+          "weight": { "type": "number" },
+          "transferable": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}
